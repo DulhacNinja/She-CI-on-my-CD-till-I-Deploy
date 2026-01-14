@@ -47,10 +47,30 @@ jobs:
         SPRING_DATASOURCE_PASSWORD: postgres
 
     - name: Build Docker image
-      run: docker build -t ${{ github.repository }}:${{ github.sha }} .
+      run: docker build -t my-spring-app:${{ github.sha }} .
 
     - name: Save Docker image
-      run: docker save ${{ github.repository }}:${{ github.sha }} | gzip > app-image.tar.gz
+      run: docker save my-spring-app:${{ github.sha }} | gzip > app-image.tar.gz
 
     - name: Upload artifact
-      uses: actions/upload-artif
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image
+        path: app-image.tar.gz
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Download artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: docker-image
+
+    - name: Load Docker image
+      run: docker load < app-image.tar.gz
+
+    - name: Deploy notification
+      run: echo "Deployment would happen here - image is ready!"
